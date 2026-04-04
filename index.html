@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>導入事例 自己診断チェックリスト</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -472,6 +473,28 @@ body {
   box-shadow: 0 6px 20px rgba(26, 35, 64, 0.4);
 }
 
+.btn-pdf {
+  display: inline-block;
+  padding: 0.8rem 2rem;
+  background: var(--white);
+  color: var(--navy);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 2px solid var(--gold);
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+  box-shadow: 0 2px 10px rgba(201, 168, 76, 0.2);
+  margin-bottom: 1.2rem;
+}
+
+.btn-pdf:hover {
+  background: var(--gold-dim);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(201, 168, 76, 0.3);
+}
+
 /* Reset button */
 .reset-section {
   text-align: center;
@@ -720,6 +743,7 @@ body {
       </div>
       <div class="result-body" id="resultBody"></div>
       <div class="result-cta">
+        <button class="btn-pdf" id="btnPdf">📄 診断結果をPDFで保存する</button>
         <p>改善の優先順位と具体的な直し方は、無料相談でご提案します。</p>
         <a href="https://writer-matsudo.com/?page_id=222" target="_blank" rel="noopener" class="btn-cta">改善プランを相談する（無料）</a>
       </div>
@@ -934,6 +958,127 @@ body {
     resultBody.innerHTML = html;
     resultPanel.style.display = 'block';
     resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // PDF Download
+  document.getElementById('btnPdf').addEventListener('click', function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const marginL = 15;
+    const marginR = 15;
+    const contentW = pageW - marginL - marginR;
+    let y = 0;
+
+    function checkPage(need) {
+      if (y + need > pageH - 20) { doc.addPage(); y = 20; }
+    }
+
+    // Header band
+    doc.setFillColor(26, 35, 64);
+    doc.rect(0, 0, pageW, 40, 'F');
+    doc.setTextColor(201, 168, 76);
+    doc.setFontSize(18);
+    doc.text('導入事例 自己診断チェックリスト', pageW / 2, 18, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setTextColor(180, 180, 190);
+    doc.text('診断結果レポート', pageW / 2, 28, { align: 'center' });
+    doc.setTextColor(146, 152, 165);
+    doc.text(new Date().toLocaleDateString('ja-JP'), pageW / 2, 35, { align: 'center' });
+    y = 50;
+
+    // Rank
+    const rankText = rankLetter.textContent;
+    const rankMsg = rankMessage.textContent;
+    const score = getScore();
+
+    doc.setFillColor(26, 35, 64);
+    doc.roundedRect(marginL, y, contentW, 28, 3, 3, 'F');
+    doc.setTextColor(201, 168, 76);
+    doc.setFontSize(22);
+    doc.text(rankText, pageW / 2, y + 12, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text(rankMsg, pageW / 2, y + 20, { align: 'center' });
+    doc.setTextColor(180, 180, 190);
+    doc.text('スコア: ' + score + ' / ' + TOTAL + ' 項目', pageW / 2, y + 26, { align: 'center' });
+    y += 36;
+
+    // Build category data
+    const cats = getCategoryStatus();
+    const catEntries = Object.entries(cats);
+    let maxUnchecked = 0;
+    catEntries.forEach(([, v]) => { if (v.uncheckedIds.length > maxUnchecked) maxUnchecked = v.uncheckedIds.length; });
+    const priorityAreas = catEntries.filter(([, v]) => v.uncheckedIds.length === maxUnchecked && maxUnchecked > 0);
+    const otherImprovement = catEntries.filter(([, v]) => v.uncheckedIds.length > 0 && v.uncheckedIds.length < maxUnchecked);
+    const clearedCats = catEntries.filter(([, v]) => v.uncheckedIds.length === 0);
+    otherImprovement.sort((a, b) => b[1].uncheckedIds.length - a[1].uncheckedIds.length);
+
+    function drawSection(title, color) {
+      checkPage(14);
+      doc.setFontSize(12);
+      doc.setTextColor(color[0], color[1], color[2]);
+      doc.text('■ ' + title, marginL, y);
+      y += 8;
+    }
+
+    function drawCategory(cat, data) {
+      checkPage(12);
+      doc.setFontSize(10);
+      doc.setTextColor(26, 35, 64);
+      doc.text('【' + cat + '】（' + data.uncheckedIds.length + '/' + data.total + ' 未チェック）', marginL + 2, y);
+      y += 6;
+      data.uncheckedIds.forEach(id => {
+        const comment = diagnosticComments[id] || id;
+        const lines = doc.splitTextToSize(comment, contentW - 8);
+        checkPage(lines.length * 5 + 3);
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 110);
+        doc.text(lines, marginL + 5, y);
+        y += lines.length * 5 + 3;
+      });
+      y += 2;
+    }
+
+    // Priority areas
+    if (priorityAreas.length > 0) {
+      drawSection('最優先の改善エリア', [231, 76, 60]);
+      priorityAreas.forEach(([cat, data]) => drawCategory(cat, data));
+    }
+
+    // Other improvements
+    if (otherImprovement.length > 0) {
+      drawSection('改善が必要な箇所', [26, 35, 64]);
+      otherImprovement.forEach(([cat, data]) => drawCategory(cat, data));
+    }
+
+    // Cleared
+    if (clearedCats.length > 0) {
+      drawSection('クリア済みカテゴリ', [39, 174, 96]);
+      clearedCats.forEach(([cat]) => {
+        checkPage(8);
+        doc.setFontSize(10);
+        doc.setTextColor(39, 174, 96);
+        doc.text('✓ ' + cat + '　クリア', marginL + 2, y);
+        y += 7;
+      });
+    }
+
+    // Footer
+    y += 8;
+    checkPage(14);
+    doc.setDrawColor(201, 168, 76);
+    doc.line(marginL, y, pageW - marginR, y);
+    y += 7;
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 110);
+    doc.text('改善の優先順位と具体的な直し方は、無料相談でご提案します。', pageW / 2, y, { align: 'center' });
+    y += 5;
+    doc.setTextColor(201, 168, 76);
+    doc.text('https://writer-matsudo.com/?page_id=222', pageW / 2, y, { align: 'center' });
+
+    doc.save('導入事例診断結果.pdf');
   });
 
   // Reset
