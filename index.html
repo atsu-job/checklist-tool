@@ -743,7 +743,7 @@ body {
       </div>
       <div class="result-body" id="resultBody"></div>
       <div class="result-cta">
-        <button class="btn-pdf" id="btnPdf">📄 診断結果をPDF保存 / 印刷する</button>
+        <button class="btn-pdf" id="btnPdf">📄 診断結果をPDFで保存する</button>
         <p>改善の優先順位と具体的な直し方は、無料相談でご提案します。</p>
         <a href="https://writer-matsudo.com/?page_id=222" target="_blank" rel="noopener" class="btn-cta">改善プランを相談する（無料）</a>
       </div>
@@ -1047,25 +1047,46 @@ body {
 
     html += '</div>';
 
-    // Open in new window and trigger print (save as PDF)
+    // Open new window, render HTML, auto-generate PDF via html2pdf.js, then close
     var fullHtml = '<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">';
-    fullHtml += '<title>導入事例診断結果</title>';
+    fullHtml += '<title>PDF生成中...</title>';
     fullHtml += '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">';
-    fullHtml += '<style>body{margin:20px;background:#fff;} @media print{body{margin:0;} @page{margin:15mm;}}</style>';
-    fullHtml += '</head><body>' + html + '</body></html>';
+    fullHtml += '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>';
+    fullHtml += '<style>body{margin:20px;background:#fff;font-family:"Noto Sans JP",sans-serif;}</style>';
+    fullHtml += '</head><body>';
+    fullHtml += '<div id="pdfTarget">' + html + '</div>';
+    fullHtml += '<p id="status" style="text-align:center;color:#999;margin-top:20px;">⏳ PDF生成中...しばらくお待ちください</p>';
+    fullHtml += '<script>';
+    fullHtml += 'window.onload=function(){';
+    fullHtml += '  setTimeout(function(){';
+    fullHtml += '    var el=document.getElementById("pdfTarget");';
+    fullHtml += '    html2pdf().set({';
+    fullHtml += '      margin:[8,8,8,8],';
+    fullHtml += '      filename:"導入事例診断結果.pdf",';
+    fullHtml += '      image:{type:"jpeg",quality:0.95},';
+    fullHtml += '      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff"},';
+    fullHtml += '      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},';
+    fullHtml += '      pagebreak:{mode:["css","legacy"]}';
+    fullHtml += '    }).from(el).save().then(function(){';
+    fullHtml += '      document.getElementById("status").textContent="✅ ダウンロード完了！このウィンドウは閉じてOKです";';
+    fullHtml += '      setTimeout(function(){window.close();},1500);';
+    fullHtml += '    });';
+    fullHtml += '  },800);';
+    fullHtml += '};';
+    fullHtml += '<\/script>';
+    fullHtml += '</body></html>';
 
-    var printWin = window.open('', '_blank');
-    printWin.document.write(fullHtml);
-    printWin.document.close();
+    var pdfWin = window.open('', '_blank');
+    if (!pdfWin) {
+      alert('ポップアップがブロックされました。ブラウザのポップアップを許可してください。');
+      btn.textContent = '📄 診断結果をPDFで保存する';
+      btn.disabled = false;
+      return;
+    }
+    pdfWin.document.write(fullHtml);
+    pdfWin.document.close();
 
-    // Wait for fonts to load, then print
-    printWin.onload = function() {
-      setTimeout(function() {
-        printWin.print();
-      }, 500);
-    };
-
-    btn.textContent = '📄 診断結果をPDF保存 / 印刷する';
+    btn.textContent = '📄 診断結果をPDFで保存する';
     btn.disabled = false;
   });
 
