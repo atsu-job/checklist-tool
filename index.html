@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>導入事例 自己診断チェックリスト</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -531,6 +529,35 @@ body {
   .rank-letter { font-size: 3.5rem; }
   .btn-diagnose { padding: 0.9rem 2rem; font-size: 1rem; }
 }
+
+/* Print styles */
+@media print {
+  body { background: #fff; }
+  .header, .tabs, .tab-content, .diagnose-section, .reset-section,
+  .btn-pdf, .btn-cta, .result-cta p { display: none !important; }
+  .result-panel { display: block !important; margin: 0; animation: none !important; }
+  .result-card { box-shadow: none; border: 1px solid #ddd; }
+  .rank-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .priority-area { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cleared-area { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .result-cta { display: block !important; background: #fff; text-align: center; padding: 1rem; }
+  .result-cta::before {
+    content: '改善の優先順位と具体的な直し方は、無料相談でご提案します。';
+    display: block; font-size: 0.9rem; color: #6b7280; margin-bottom: 0.5rem;
+  }
+  .result-cta::after {
+    content: 'https://writer-matsudo.com/?page_id=222';
+    display: block; font-size: 0.85rem; color: #c9a84c;
+  }
+  .main { max-width: 100%; padding: 0; }
+
+  /* Print header */
+  .result-panel::before {
+    content: '導入事例 自己診断チェックリスト ─ 診断結果レポート';
+    display: block; text-align: center; font-size: 14px; font-weight: 700;
+    color: #1a2340; margin-bottom: 12px; padding-top: 8px;
+  }
+}
 </style>
 </head>
 <body>
@@ -961,72 +988,9 @@ body {
     resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // PDF Download
-  document.getElementById('btnPdf').addEventListener('click', async function() {
-    const btn = this;
-    btn.textContent = '⏳ PDF生成中...';
-    btn.disabled = true;
-
-    try {
-      const target = document.querySelector('.result-card');
-
-      // Capture with html2canvas
-      const canvas = await html2canvas(target, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const imgW = canvas.width;
-      const imgH = canvas.height;
-
-      const { jsPDF } = window.jspdf;
-      const pdfW = 210; // A4 width mm
-      const margin = 10;
-      const usableW = pdfW - margin * 2;
-      const ratio = usableW / imgW;
-      const scaledH = imgH * ratio;
-      const pageH = 297; // A4 height mm
-      const usableH = pageH - margin * 2;
-
-      const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-
-      if (scaledH <= usableH) {
-        // Fits on one page
-        doc.addImage(imgData, 'JPEG', margin, margin, usableW, scaledH);
-      } else {
-        // Split across multiple pages
-        let remainH = imgH; // remaining pixels
-        let srcY = 0;
-
-        while (remainH > 0) {
-          const sliceH = Math.min(remainH, usableH / ratio);
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = imgW;
-          sliceCanvas.height = Math.ceil(sliceH);
-          const ctx = sliceCanvas.getContext('2d');
-          ctx.drawImage(canvas, 0, srcY, imgW, sliceH, 0, 0, imgW, sliceH);
-          const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95);
-          const sliceScaledH = sliceH * ratio;
-
-          if (srcY > 0) doc.addPage();
-          doc.addImage(sliceData, 'JPEG', margin, margin, usableW, sliceScaledH);
-
-          srcY += sliceH;
-          remainH -= sliceH;
-        }
-      }
-
-      doc.save('導入事例診断結果.pdf');
-    } catch (e) {
-      alert('PDF生成に失敗しました。もう一度お試しください。');
-      console.error(e);
-    } finally {
-      btn.textContent = '📄 診断結果をPDFで保存する';
-      btn.disabled = false;
-    }
+  // PDF Download (browser print)
+  document.getElementById('btnPdf').addEventListener('click', function() {
+    window.print();
   });
 
   // Reset
