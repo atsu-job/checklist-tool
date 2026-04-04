@@ -961,72 +961,122 @@ body {
     resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // PDF Download (html2pdf.js)
+  // PDF Download - build standalone HTML with no CSS variables
   document.getElementById('btnPdf').addEventListener('click', function() {
-    const btn = this;
+    var btn = this;
     btn.textContent = '⏳ PDF生成中...';
     btn.disabled = true;
 
-    var target = document.querySelector('.result-card');
+    var score = getScore();
+    var rank, rankBg, msg;
+    if (score >= 19) { rank = 'A'; rankBg = 'linear-gradient(135deg,#1a6b3c,#27ae60)'; msg = '商談化に近い記事です。あと一歩で強力な営業資産になります。'; }
+    else if (score >= 14) { rank = 'B'; rankBg = 'linear-gradient(135deg,#1a5276,#2e86c1)'; msg = '改善で大きく伸びる余地があります。'; }
+    else if (score >= 8) { rank = 'C'; rankBg = 'linear-gradient(135deg,#7d5a00,#c9a84c)'; msg = '設計から見直すと成果が変わります。'; }
+    else { rank = 'D'; rankBg = 'linear-gradient(135deg,#922b21,#e74c3c)'; msg = '記事の構造を根本から整える必要があります。'; }
 
-    // Temporarily hide buttons
-    var pdfBtn = document.getElementById('btnPdf');
-    var ctaLink = target.querySelector('.btn-cta');
-    pdfBtn.style.display = 'none';
-    if (ctaLink) ctaLink.style.display = 'none';
+    var cats = getCategoryStatus();
+    var catEntries = Object.entries(cats);
+    var maxU = 0;
+    catEntries.forEach(function(e) { if (e[1].uncheckedIds.length > maxU) maxU = e[1].uncheckedIds.length; });
 
-    // Force resolve CSS variables by setting inline on the target
-    target.style.setProperty('--navy', '#1a2340');
-    target.style.setProperty('--gold', '#c9a84c');
-    target.style.setProperty('--gray-600', '#6b7280');
-    target.style.setProperty('--gray-400', '#9298a5');
-    target.style.setProperty('--red', '#e74c3c');
-    target.style.setProperty('--green', '#27ae60');
-    target.style.setProperty('--red-bg', 'rgba(231,76,60,0.08)');
-    target.style.setProperty('--green-bg', 'rgba(39,174,96,0.08)');
+    var html = '';
+    html += '<div style="font-family:\'Noto Sans JP\',sans-serif;color:#1a2340;line-height:1.7;max-width:700px;margin:0 auto;">';
 
-    // Temporarily inline all text colors for html2canvas
-    var allEls = target.querySelectorAll('*');
-    var savedStyles = [];
-    allEls.forEach(function(el) {
-      var cs = window.getComputedStyle(el);
-      savedStyles.push({ el: el, color: el.style.color, bg: el.style.backgroundColor, blc: el.style.borderLeftColor });
-      el.style.color = cs.color;
-      el.style.backgroundColor = cs.backgroundColor;
-      if (cs.borderLeftColor !== 'rgba(0, 0, 0, 0)') el.style.borderLeftColor = cs.borderLeftColor;
-    });
+    // Header
+    html += '<div style="background:#1a2340;padding:20px;text-align:center;border-radius:12px 12px 0 0;">';
+    html += '<div style="color:#c9a84c;font-size:18px;font-weight:900;">導入事例 自己診断チェックリスト</div>';
+    html += '<div style="color:#9298a5;font-size:11px;margin-top:4px;">診断結果レポート ─ ' + new Date().toLocaleDateString('ja-JP') + '</div>';
+    html += '</div>';
+
+    // Rank
+    html += '<div style="background:' + rankBg + ';padding:30px 20px;text-align:center;color:#fff;">';
+    html += '<div style="font-size:13px;opacity:0.85;">あなたの記事の評価</div>';
+    html += '<div style="font-size:48px;font-weight:900;margin:8px 0;">' + rank + ' ランク</div>';
+    html += '<div style="font-size:14px;opacity:0.9;">' + msg + '</div>';
+    html += '<div style="font-size:12px;margin-top:8px;opacity:0.7;">スコア: ' + score + ' / 22 項目</div>';
+    html += '</div>';
+
+    // Body
+    html += '<div style="padding:20px;background:#fff;">';
+
+    // Priority areas
+    var priorities = catEntries.filter(function(e) { return e[1].uncheckedIds.length === maxU && maxU > 0; });
+    var others = catEntries.filter(function(e) { return e[1].uncheckedIds.length > 0 && e[1].uncheckedIds.length < maxU; });
+    var cleared = catEntries.filter(function(e) { return e[1].uncheckedIds.length === 0; });
+    others.sort(function(a, b) { return b[1].uncheckedIds.length - a[1].uncheckedIds.length; });
+
+    if (priorities.length > 0) {
+      html += '<div style="font-size:14px;font-weight:700;color:#e74c3c;margin-bottom:10px;">■ 最優先の改善エリア</div>';
+      priorities.forEach(function(entry) {
+        html += '<div style="background:rgba(231,76,60,0.08);border-left:4px solid #e74c3c;border-radius:0 8px 8px 0;padding:12px;margin-bottom:10px;">';
+        html += '<div style="font-weight:700;color:#e74c3c;font-size:13px;margin-bottom:6px;">' + entry[0] + '（' + entry[1].uncheckedIds.length + '/' + entry[1].total + ' 未チェック）</div>';
+        entry[1].uncheckedIds.forEach(function(id) {
+          var c = diagnosticComments[id] || id;
+          html += '<div style="font-size:12px;color:#6b7280;margin-bottom:6px;padding-left:12px;border-left:2px solid #ddd;">' + c.replace(/\n/g, '<br>') + '</div>';
+        });
+        html += '</div>';
+      });
+    }
+
+    if (others.length > 0) {
+      html += '<div style="font-size:14px;font-weight:700;color:#1a2340;margin:16px 0 10px;">■ 改善が必要な箇所</div>';
+      others.forEach(function(entry) {
+        html += '<div style="margin-bottom:12px;">';
+        html += '<div style="font-weight:700;color:#1a2340;font-size:13px;margin-bottom:6px;">' + entry[0] + '（' + entry[1].uncheckedIds.length + '/' + entry[1].total + ' 未チェック）</div>';
+        entry[1].uncheckedIds.forEach(function(id) {
+          var c = diagnosticComments[id] || id;
+          html += '<div style="font-size:12px;color:#6b7280;margin-bottom:6px;padding-left:12px;border-left:2px solid #ddd;">' + c.replace(/\n/g, '<br>') + '</div>';
+        });
+        html += '</div>';
+      });
+    }
+
+    if (cleared.length > 0) {
+      html += '<div style="font-size:14px;font-weight:700;color:#27ae60;margin:16px 0 10px;">■ クリア済みカテゴリ</div>';
+      cleared.forEach(function(entry) {
+        html += '<div style="background:rgba(39,174,96,0.08);border-left:4px solid #27ae60;border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:6px;font-size:13px;color:#27ae60;font-weight:700;">✓ ' + entry[0] + '　クリア</div>';
+      });
+    }
+
+    html += '</div>';
+
+    // Footer
+    html += '<div style="background:#f4f5f7;padding:16px;text-align:center;border-radius:0 0 12px 12px;">';
+    html += '<div style="font-size:12px;color:#6b7280;margin-bottom:6px;">改善の優先順位と具体的な直し方は、無料相談でご提案します。</div>';
+    html += '<div style="font-size:12px;color:#c9a84c;">https://writer-matsudo.com/?page_id=222</div>';
+    html += '</div>';
+
+    html += '</div>';
+
+    // Create temp container
+    var container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.position = 'fixed';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.width = '700px';
+    container.style.zIndex = '-1';
+    container.style.opacity = '1';
+    container.style.background = '#fff';
+    document.body.appendChild(container);
 
     var opt = {
-      margin:       [8, 8, 8, 8],
-      filename:     '導入事例診断結果.pdf',
-      image:        { type: 'jpeg', quality: 0.92 },
-      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: ['css', 'legacy'] }
+      margin: [8, 8, 8, 8],
+      filename: '導入事例診断結果.pdf',
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] }
     };
 
-    html2pdf().set(opt).from(target).save().then(function() {
-      // Restore styles
-      savedStyles.forEach(function(s) {
-        s.el.style.color = s.color;
-        s.el.style.backgroundColor = s.bg;
-        s.el.style.borderLeftColor = s.blc;
-      });
-      pdfBtn.style.display = '';
-      if (ctaLink) ctaLink.style.display = '';
+    html2pdf().set(opt).from(container.firstChild).save().then(function() {
+      document.body.removeChild(container);
       btn.textContent = '📄 診断結果をPDFで保存する';
       btn.disabled = false;
     }).catch(function(e) {
-      savedStyles.forEach(function(s) {
-        s.el.style.color = s.color;
-        s.el.style.backgroundColor = s.bg;
-        s.el.style.borderLeftColor = s.blc;
-      });
-      pdfBtn.style.display = '';
-      if (ctaLink) ctaLink.style.display = '';
+      document.body.removeChild(container);
       btn.textContent = '📄 診断結果をPDFで保存する';
       btn.disabled = false;
-      alert('PDF生成に失敗しました。');
       console.error(e);
     });
   });
