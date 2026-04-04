@@ -961,69 +961,73 @@ body {
     resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  // PDF Download (html2pdf.js with CSS variable fix)
+  // PDF Download (html2pdf.js)
   document.getElementById('btnPdf').addEventListener('click', function() {
     const btn = this;
     btn.textContent = '⏳ PDF生成中...';
     btn.disabled = true;
 
-    // Clone and resolve CSS variables for html2canvas compatibility
-    const original = document.querySelector('.result-card');
-    const clone = original.cloneNode(true);
+    var target = document.querySelector('.result-card');
 
-    // Remove buttons from clone
-    clone.querySelectorAll('.btn-pdf, .btn-cta').forEach(function(el) { el.remove(); });
+    // Temporarily hide buttons
+    var pdfBtn = document.getElementById('btnPdf');
+    var ctaLink = target.querySelector('.btn-cta');
+    pdfBtn.style.display = 'none';
+    if (ctaLink) ctaLink.style.display = 'none';
 
-    // Resolve all computed styles inline to avoid CSS variable issues
-    function applyComputedStyles(source, target) {
-      const sourceEls = source.querySelectorAll('*');
-      const targetEls = target.querySelectorAll('*');
-      for (let i = 0; i < sourceEls.length; i++) {
-        const cs = window.getComputedStyle(sourceEls[i]);
-        targetEls[i].style.color = cs.color;
-        targetEls[i].style.backgroundColor = cs.backgroundColor;
-        targetEls[i].style.borderColor = cs.borderColor;
-        targetEls[i].style.borderLeftColor = cs.borderLeftColor;
-        targetEls[i].style.fontSize = cs.fontSize;
-        targetEls[i].style.fontWeight = cs.fontWeight;
-        targetEls[i].style.fontFamily = cs.fontFamily;
-        targetEls[i].style.lineHeight = cs.lineHeight;
-        targetEls[i].style.padding = cs.padding;
-        targetEls[i].style.margin = cs.margin;
-      }
-      // Also apply to root
-      const rcs = window.getComputedStyle(source);
-      target.style.color = rcs.color;
-      target.style.backgroundColor = rcs.backgroundColor;
-    }
-    applyComputedStyles(original, clone);
+    // Force resolve CSS variables by setting inline on the target
+    target.style.setProperty('--navy', '#1a2340');
+    target.style.setProperty('--gold', '#c9a84c');
+    target.style.setProperty('--gray-600', '#6b7280');
+    target.style.setProperty('--gray-400', '#9298a5');
+    target.style.setProperty('--red', '#e74c3c');
+    target.style.setProperty('--green', '#27ae60');
+    target.style.setProperty('--red-bg', 'rgba(231,76,60,0.08)');
+    target.style.setProperty('--green-bg', 'rgba(39,174,96,0.08)');
 
-    // Set container styles
-    clone.style.width = '700px';
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '0';
-    clone.style.boxShadow = 'none';
-    document.body.appendChild(clone);
+    // Temporarily inline all text colors for html2canvas
+    var allEls = target.querySelectorAll('*');
+    var savedStyles = [];
+    allEls.forEach(function(el) {
+      var cs = window.getComputedStyle(el);
+      savedStyles.push({ el: el, color: el.style.color, bg: el.style.backgroundColor, blc: el.style.borderLeftColor });
+      el.style.color = cs.color;
+      el.style.backgroundColor = cs.backgroundColor;
+      if (cs.borderLeftColor !== 'rgba(0, 0, 0, 0)') el.style.borderLeftColor = cs.borderLeftColor;
+    });
 
-    const opt = {
-      margin:       [10, 10, 10, 10],
+    var opt = {
+      margin:       [8, 8, 8, 8],
       filename:     '導入事例診断結果.pdf',
-      image:        { type: 'jpeg', quality: 0.95 },
-      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      image:        { type: 'jpeg', quality: 0.92 },
+      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak:    { mode: ['css', 'legacy'] }
     };
 
-    html2pdf().set(opt).from(clone).save().then(function() {
-      document.body.removeChild(clone);
+    html2pdf().set(opt).from(target).save().then(function() {
+      // Restore styles
+      savedStyles.forEach(function(s) {
+        s.el.style.color = s.color;
+        s.el.style.backgroundColor = s.bg;
+        s.el.style.borderLeftColor = s.blc;
+      });
+      pdfBtn.style.display = '';
+      if (ctaLink) ctaLink.style.display = '';
       btn.textContent = '📄 診断結果をPDFで保存する';
       btn.disabled = false;
-    }).catch(function() {
-      document.body.removeChild(clone);
+    }).catch(function(e) {
+      savedStyles.forEach(function(s) {
+        s.el.style.color = s.color;
+        s.el.style.backgroundColor = s.bg;
+        s.el.style.borderLeftColor = s.blc;
+      });
+      pdfBtn.style.display = '';
+      if (ctaLink) ctaLink.style.display = '';
       btn.textContent = '📄 診断結果をPDFで保存する';
       btn.disabled = false;
-      alert('PDF生成に失敗しました。もう一度お試しください。');
+      alert('PDF生成に失敗しました。');
+      console.error(e);
     });
   });
 
