@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>導入事例 自己診断チェックリスト</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --navy: #1a2340;
+  --navy-light: #243052;
+  --navy-lighter: #2d3d66;
+  --gold: #c9a84c;
+  --gold-light: #e0c872;
+  --gold-dim: rgba(201, 168, 76, 0.15);
+  --white: #ffffff;
+  --gray-100: #f4f5f7;
+  --gray-200: #e2e4e9;
+  --gray-400: #9298a5;
+  --gray-600: #6b7280;
+  --red: #e74c3c;
+  --red-bg: rgba(231, 76, 60, 0.08);
+  --green: #27ae60;
+  --green-bg: rgba(39, 174, 96, 0.08);
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background: var(--gray-100);
+  color: var(--navy);
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  color: var(--white);
+  padding: 2.5rem 1.5rem 2rem;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3rem;
+}
+
+.header h1 span {
+  color: var(--gold);
+}
+
+.header .subtitle {
+  font-size: 0.85rem;
+  color: var(--gray-400);
+  margin-bottom: 1.2rem;
+}
+
+.score-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.score-number {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--gold);
+  min-width: 120px;
+}
+
+.score-number small {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gray-400);
+}
+
+.score-bar-wrap {
+  flex: 1;
+  max-width: 400px;
+  min-width: 200px;
+}
+
+.score-bar {
+  height: 10px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  border-radius: 5px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.score-percent {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  text-align: right;
+  margin-top: 0.2rem;
+}
+
+/* Main */
+.main {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0;
+  border-bottom: 2px solid var(--gray-200);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 0.9rem 1rem;
+  background: var(--white);
+  border: 2px solid var(--gray-200);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  top: 2px;
+}
+
+.tab-btn.active {
+  color: var(--navy);
+  background: var(--white);
+  border-color: var(--gold);
+  border-bottom-color: var(--white);
+  z-index: 1;
+}
+
+.tab-btn .tab-count {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gray-400);
+}
+
+.tab-btn.active .tab-count {
+  color: var(--gold);
+}
+
+/* Tab Content */
+.tab-content {
+  display: none;
+  background: var(--white);
+  border: 2px solid var(--gray-200);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  padding: 1.5rem 1.2rem;
+}
+
+.tab-content.active { display: block; }
+
+/* Category Group */
+.category-group {
+  margin-bottom: 1.8rem;
+}
+
+.category-group:last-child { margin-bottom: 0; }
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--gold-dim);
+}
+
+.category-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--navy);
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.category-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.category-count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  white-space: nowrap;
+}
+
+/* Checklist Item */
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 0.4rem;
+  transition: background 0.3s, opacity 0.3s;
+  cursor: pointer;
+  user-select: none;
+}
+
+.check-item:hover { background: var(--gray-100); }
+
+.check-item.checked {
+  background: var(--gold-dim);
+  opacity: 0.65;
+}
+
+.check-item input[type="checkbox"] {
+  display: none;
+}
+
+.check-box {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--gray-400);
+  border-radius: 5px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+  margin-top: 2px;
+}
+
+.check-item.checked .check-box {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.check-box svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--white);
+  stroke-width: 3;
+  fill: none;
+  opacity: 0;
+  transform: scale(0);
+  transition: all 0.25s;
+}
+
+.check-item.checked .check-box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.check-label {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--navy);
+}
+
+/* Diagnose Button */
+.diagnose-section {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.btn-diagnose {
+  display: inline-block;
+  padding: 1rem 3rem;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--navy);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(201, 168, 76, 0.4);
+}
+
+.btn-diagnose:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(201, 168, 76, 0.5);
+}
+
+.btn-diagnose:active { transform: translateY(0); }
+
+/* Result Panel */
+.result-panel {
+  display: none;
+  margin-top: 2rem;
+  animation: fadeSlideUp 0.6s ease-out;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.result-card {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.rank-banner {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--white);
+}
+
+.rank-banner.rank-a { background: linear-gradient(135deg, #1a6b3c, #27ae60); }
+.rank-banner.rank-b { background: linear-gradient(135deg, #1a5276, #2e86c1); }
+.rank-banner.rank-c { background: linear-gradient(135deg, #7d5a00, #c9a84c); }
+.rank-banner.rank-d { background: linear-gradient(135deg, #922b21, #e74c3c); }
+
+.rank-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-bottom: 0.5rem;
+}
+
+.rank-letter {
+  font-size: 5rem;
+  font-weight: 900;
+  line-height: 1;
+  animation: rankPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s both;
+}
+
+@keyframes rankPop {
+  from { opacity: 0; transform: scale(0.3); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.rank-message {
+  font-size: 1rem;
+  margin-top: 0.8rem;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+.result-body { padding: 1.5rem; }
+
+.result-section {
+  margin-bottom: 1.5rem;
+}
+
+.result-section:last-child { margin-bottom: 0; }
+
+.result-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.priority-area {
+  background: var(--red-bg);
+  border-left: 4px solid var(--red);
+  border-radius: 0 8px 8px 0;
+  padding: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.priority-area .area-title {
+  font-weight: 700;
+  color: var(--red);
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+}
+
+.cleared-area {
+  background: var(--green-bg);
+  border-left: 4px solid var(--green);
+  border-radius: 0 8px 8px 0;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--green);
+  font-weight: 700;
+}
+
+.improve-list {
+  list-style: none;
+  padding: 0;
+}
+
+.improve-list li {
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  padding: 0.3rem 0;
+  padding-left: 1.2rem;
+  position: relative;
+}
+
+.improve-list li::before {
+  content: '>';
+  position: absolute;
+  left: 0;
+  color: var(--red);
+  font-weight: 700;
+}
+
+/* CTA */
+.result-cta {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--gray-100);
+  border-radius: 0 0 16px 16px;
+}
+
+.result-cta p {
+  font-size: 0.9rem;
+  color: var(--gray-600);
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.btn-cta {
+  display: inline-block;
+  padding: 0.9rem 2.5rem;
+  background: var(--navy);
+  color: var(--gold);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(26, 35, 64, 0.3);
+}
+
+.btn-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(26, 35, 64, 0.4);
+}
+
+/* Reset button */
+.reset-section {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.btn-reset {
+  background: none;
+  border: 1px solid var(--gray-400);
+  color: var(--gray-600);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 0.85rem;
+  padding: 0.5rem 1.5rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reset:hover {
+  border-color: var(--navy);
+  color: var(--navy);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .header { padding: 1.8rem 1rem 1.5rem; }
+  .header h1 { font-size: 1.2rem; }
+  .score-number { font-size: 1.5rem; min-width: auto; }
+  .score-bar-wrap { min-width: 150px; }
+  .tab-btn { font-size: 0.85rem; padding: 0.7rem 0.5rem; }
+  .tab-content { padding: 1rem 0.8rem; }
+  .check-item { padding: 0.7rem 0.6rem; gap: 0.6rem; }
+  .rank-letter { font-size: 3.5rem; }
+  .btn-diagnose { padding: 0.9rem 2rem; font-size: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <h1><span>導入事例</span> 自己診断チェックリスト</h1>
+  <p class="subtitle">貴社の記事は「読まれて終わり」になっていませんか？</p>
+  <div class="score-display">
+    <div class="score-number"><span id="scoreCount">0</span> <small>/ 22項目</small></div>
+    <div class="score-bar-wrap">
+      <div class="score-bar"><div class="score-bar-fill" id="scoreBarFill"></div></div>
+      <div class="score-percent" id="scorePercent">0%</div>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="outside">本文以外<span class="tab-count" id="outsideCount">0/10</span></button>
+    <button class="tab-btn" data-tab="inside">本文内<span class="tab-count" id="insideCount">0/12</span></button>
+  </div>
+
+  <!-- 本文以外 -->
+  <div class="tab-content active" id="tab-outside">
+    <!-- タイトル -->
+    <div class="category-group" data-category="タイトル">
+      <div class="category-header">
+        <span class="category-number">1</span>
+        <span class="category-title">タイトル</span>
+        <span class="category-count" data-cat-count="タイトル">0/3</span>
+      </div>
+      <label class="check-item" data-group="outside" data-category="タイトル">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">ベネフィット（読者が得られる価値）が明示されている</span>
+      </label>
+      <label class="check-item" data-group="outside" data-category="タイトル">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">読者が新しいと感じる情報、または好奇心を刺激する要素がある（数字・意外性・問いかけなど）</span>
+      </label>
+      <label class="check-item" data-group="outside" data-category="タイトル">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">設定したペルソナが読んだとき「自分の話だ」と感じられるタイトルになっている</span>
+      </label>
+    </div>
+
+    <!-- リード文・導入部 -->
+    <div class="category-group" data-category="リード文・導入部">
+      <div class="category-header">
+        <span class="category-number">2</span>
+        <span class="category-title">リード文・導入部</span>
+        <span class="category-count" data-cat-count="リード文・導入部">0/2</span>
+      </div>
+      <label class="check-item" data-group="outside" data-category="リード文・導入部">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">冒頭3段落以内に「誰の・どんな課題が・どう解決されたか」が明示されている</span>
+      </label>
+      <label class="check-item" data-group="outside" data-category="リード文・導入部">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">読者（ペルソナ）が「自分に関係のある話だ」と感じられる入り口になっている</span>
+      </label>
+    </div>
+
+    <!-- 締め・CTA -->
+    <div class="category-group" data-category="締め・CTA">
+      <div class="category-header">
+        <span class="category-number">3</span>
+        <span class="category-title">締め・CTA</span>
+        <span class="category-count" data-cat-count="締め・CTA">0/2</span>
+      </div>
+      <label class="check-item" data-group="outside" data-category="締め・CTA">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">記事末尾に次のアクション（問い合わせ・資料請求など）への導線がある</span>
+      </label>
+      <label class="check-item" data-group="outside" data-category="締め・CTA">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">CTAが記事の内容・感情の流れと自然につながっている</span>
+      </label>
+    </div>
+
+    <!-- 信頼性・証拠 -->
+    <div class="category-group" data-category="信頼性・証拠">
+      <div class="category-header">
+        <span class="category-number">4</span>
+        <span class="category-title">信頼性・証拠</span>
+        <span class="category-count" data-cat-count="信頼性・証拠">0/2</span>
+      </div>
+      <label class="check-item" data-group="outside" data-category="信頼性・証拠">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">顧客企業の情報（業種・規模・担当者名）が明記されている</span>
+      </label>
+      <label class="check-item" data-group="outside" data-category="信頼性・証拠">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">担当者の生の言葉（引用）が含まれている</span>
+      </label>
+    </div>
+
+    <!-- 可読性・全体構成 -->
+    <div class="category-group" data-category="可読性・全体構成">
+      <div class="category-header">
+        <span class="category-number">5</span>
+        <span class="category-title">可読性・全体構成</span>
+        <span class="category-count" data-cat-count="可読性・全体構成">0/1</span>
+      </div>
+      <label class="check-item" data-group="outside" data-category="可読性・全体構成">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">見出し構成が論理的で、流し読みでも内容が把握できる</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 本文内 -->
+  <div class="tab-content" id="tab-inside">
+    <!-- 課題設定 -->
+    <div class="category-group" data-category="課題設定">
+      <div class="category-header">
+        <span class="category-number">6</span>
+        <span class="category-title">課題設定</span>
+        <span class="category-count" data-cat-count="課題設定">0/2</span>
+      </div>
+      <label class="check-item" data-group="inside" data-category="課題設定">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">導入前の課題が具体的かつ感情的に描写されている</span>
+      </label>
+      <label class="check-item" data-group="inside" data-category="課題設定">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">課題の原因・背景（なぜそうなったか）まで掘り下げられている</span>
+      </label>
+    </div>
+
+    <!-- 選んだ背景 -->
+    <div class="category-group" data-category="選んだ背景">
+      <div class="category-header">
+        <span class="category-number">7</span>
+        <span class="category-title">選んだ背景</span>
+        <span class="category-count" data-cat-count="選んだ背景">0/2</span>
+      </div>
+      <label class="check-item" data-group="inside" data-category="選んだ背景">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">他社ではなくこのサービスを選んだ理由・経緯が書かれている</span>
+      </label>
+      <label class="check-item" data-group="inside" data-category="選んだ背景">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">選定時の迷い・比較・判断プロセスが描写されている</span>
+      </label>
+    </div>
+
+    <!-- 効果・成果 -->
+    <div class="category-group" data-category="効果・成果">
+      <div class="category-header">
+        <span class="category-number">8</span>
+        <span class="category-title">効果・成果</span>
+        <span class="category-count" data-cat-count="効果・成果">0/2</span>
+      </div>
+      <label class="check-item" data-group="inside" data-category="効果・成果">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">定量的な成果（数値・％・時間など）が記載されている</span>
+      </label>
+      <label class="check-item" data-group="inside" data-category="効果・成果">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">定性的な変化（現場の声・感情・雰囲気の変化）が記載されている</span>
+      </label>
+    </div>
+
+    <!-- ストーリー構成 -->
+    <div class="category-group" data-category="ストーリー構成">
+      <div class="category-header">
+        <span class="category-number">9</span>
+        <span class="category-title">ストーリー構成</span>
+        <span class="category-count" data-cat-count="ストーリー構成">0/2</span>
+      </div>
+      <label class="check-item" data-group="inside" data-category="ストーリー構成">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">導入前→導入中→導入後のストーリーアークが成立している</span>
+      </label>
+      <label class="check-item" data-group="inside" data-category="ストーリー構成">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">読者が「自社でも使えるかも」と感じられる普遍的なロジック（線）がある</span>
+      </label>
+    </div>
+
+    <!-- ペルソナへの刺さり方 -->
+    <div class="category-group" data-category="ペルソナへの刺さり方">
+      <div class="category-header">
+        <span class="category-number">10</span>
+        <span class="category-title">ペルソナへの刺さり方</span>
+        <span class="category-count" data-cat-count="ペルソナへの刺さり方">0/2</span>
+      </div>
+      <label class="check-item" data-group="inside" data-category="ペルソナへの刺さり方">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">想定読者（業界・職種・課題）が明確に意識された表現になっている</span>
+      </label>
+      <label class="check-item" data-group="inside" data-category="ペルソナへの刺さり方">
+        <input type="checkbox"><span class="check-box"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span>
+        <span class="check-label">読者の「あるある」感を刺激する具体的な描写がある</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Diagnose Button -->
+  <div class="diagnose-section">
+    <button class="btn-diagnose" id="btnDiagnose">診断結果を見る</button>
+  </div>
+
+  <!-- Result Panel -->
+  <div class="result-panel" id="resultPanel">
+    <div class="result-card">
+      <div class="rank-banner" id="rankBanner">
+        <div class="rank-label">あなたの記事の評価</div>
+        <div class="rank-letter" id="rankLetter"></div>
+        <div class="rank-message" id="rankMessage"></div>
+      </div>
+      <div class="result-body" id="resultBody"></div>
+      <div class="result-cta">
+        <p>改善の優先順位と具体的な直し方は、無料相談でご提案します。</p>
+        <a href="https://writer-matsudo.com/?page_id=222" target="_blank" rel="noopener" class="btn-cta">改善プランを相談する（無料）</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset -->
+  <div class="reset-section">
+    <button class="btn-reset" id="btnReset">チェックをリセット</button>
+  </div>
+</main>
+
+<script>
+(function() {
+  const TOTAL = 22;
+  const checkItems = document.querySelectorAll('.check-item');
+  const scoreCount = document.getElementById('scoreCount');
+  const scoreBarFill = document.getElementById('scoreBarFill');
+  const scorePercent = document.getElementById('scorePercent');
+  const outsideCount = document.getElementById('outsideCount');
+  const insideCount = document.getElementById('insideCount');
+  const resultPanel = document.getElementById('resultPanel');
+  const rankBanner = document.getElementById('rankBanner');
+  const rankLetter = document.getElementById('rankLetter');
+  const rankMessage = document.getElementById('rankMessage');
+  const resultBody = document.getElementById('resultBody');
+
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Check toggle
+  checkItems.forEach(item => {
+    item.addEventListener('click', function(e) {
+      const cb = this.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+      this.classList.toggle('checked', cb.checked);
+      updateScore();
+    });
+  });
+
+  function getScore() {
+    let total = 0;
+    checkItems.forEach(item => {
+      if (item.querySelector('input').checked) total++;
+    });
+    return total;
+  }
+
+  function getGroupCount(group) {
+    let checked = 0, all = 0;
+    checkItems.forEach(item => {
+      if (item.dataset.group === group) {
+        all++;
+        if (item.querySelector('input').checked) checked++;
+      }
+    });
+    return { checked, all };
+  }
+
+  function getCategoryStatus() {
+    const cats = {};
+    checkItems.forEach(item => {
+      const cat = item.dataset.category;
+      if (!cats[cat]) cats[cat] = { total: 0, checked: 0, unchecked: [] };
+      cats[cat].total++;
+      if (item.querySelector('input').checked) {
+        cats[cat].checked++;
+      } else {
+        cats[cat].unchecked.push(item.querySelector('.check-label').textContent);
+      }
+    });
+    return cats;
+  }
+
+  function updateScore() {
+    const score = getScore();
+    const pct = Math.round((score / TOTAL) * 100);
+    scoreCount.textContent = score;
+    scoreBarFill.style.width = pct + '%';
+    scorePercent.textContent = pct + '%';
+
+    const outside = getGroupCount('outside');
+    const inside = getGroupCount('inside');
+    outsideCount.textContent = outside.checked + '/' + outside.all;
+    insideCount.textContent = inside.checked + '/' + inside.all;
+
+    // Update category counts
+    document.querySelectorAll('[data-cat-count]').forEach(el => {
+      const cat = el.dataset.catCount;
+      const items = document.querySelectorAll(`.check-item[data-category="${cat}"]`);
+      let c = 0;
+      items.forEach(i => { if (i.querySelector('input').checked) c++; });
+      el.textContent = c + '/' + items.length;
+    });
+
+    // Hide result if score changes after showing
+    resultPanel.style.display = 'none';
+  }
+
+  // Diagnose
+  document.getElementById('btnDiagnose').addEventListener('click', function() {
+    const score = getScore();
+    let rank, rankClass, message;
+
+    if (score >= 19) {
+      rank = 'A'; rankClass = 'rank-a';
+      message = '商談化に近い記事です。あと一歩で強力な営業資産になります。';
+    } else if (score >= 14) {
+      rank = 'B'; rankClass = 'rank-b';
+      message = '改善で大きく伸びる余地があります。';
+    } else if (score >= 8) {
+      rank = 'C'; rankClass = 'rank-c';
+      message = '設計から見直すと成果が変わります。';
+    } else {
+      rank = 'D'; rankClass = 'rank-d';
+      message = '記事の構造を根本から整える必要があります。';
+    }
+
+    rankBanner.className = 'rank-banner ' + rankClass;
+    rankLetter.textContent = rank + ' ランク';
+    rankLetter.style.animation = 'none';
+    rankLetter.offsetHeight; // reflow
+    rankLetter.style.animation = '';
+    rankMessage.textContent = message;
+
+    // Build improvement report
+    const cats = getCategoryStatus();
+    let html = '';
+
+    // Find priority areas (most unchecked)
+    const catEntries = Object.entries(cats);
+    let maxUnchecked = 0;
+    catEntries.forEach(([, v]) => { if (v.unchecked.length > maxUnchecked) maxUnchecked = v.unchecked.length; });
+
+    // Improvements needed
+    const needsImprovement = catEntries.filter(([, v]) => v.unchecked.length > 0);
+    const cleared = catEntries.filter(([, v]) => v.unchecked.length === 0);
+
+    if (needsImprovement.length > 0) {
+      html += '<div class="result-section"><div class="result-section-title">改善が必要な箇所</div>';
+
+      // Sort: most unchecked first
+      needsImprovement.sort((a, b) => b[1].unchecked.length - a[1].unchecked.length);
+
+      needsImprovement.forEach(([cat, data], idx) => {
+        const isPriority = data.unchecked.length === maxUnchecked && maxUnchecked > 0;
+        if (isPriority) {
+          html += '<div class="priority-area">';
+          html += '<div class="area-title">最優先の改善エリア：' + cat + '（' + data.unchecked.length + '/' + data.total + ' 未チェック）</div>';
+        } else {
+          html += '<div style="padding:0.6rem 0;">';
+          html += '<div style="font-weight:700;font-size:0.9rem;color:var(--navy);margin-bottom:0.3rem;">' + cat + '（' + data.unchecked.length + '/' + data.total + ' 未チェック）</div>';
+        }
+        html += '<ul class="improve-list">';
+        data.unchecked.forEach(label => {
+          html += '<li>' + label + '</li>';
+        });
+        html += '</ul></div>';
+      });
+
+      html += '</div>';
+    }
+
+    if (cleared.length > 0) {
+      html += '<div class="result-section"><div class="result-section-title">クリア済みカテゴリ</div>';
+      cleared.forEach(([cat]) => {
+        html += '<div class="cleared-area">&#10003; ' + cat + ' クリア</div>';
+      });
+      html += '</div>';
+    }
+
+    resultBody.innerHTML = html;
+    resultPanel.style.display = 'block';
+    resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // Reset
+  document.getElementById('btnReset').addEventListener('click', function() {
+    checkItems.forEach(item => {
+      item.querySelector('input').checked = false;
+      item.classList.remove('checked');
+    });
+    resultPanel.style.display = 'none';
+    updateScore();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
+</script>
+</body>
+</html>
